@@ -49,7 +49,7 @@ public class TokenGenerator {
         Scanner scopesScanner = new Scanner(new File("scopes.txt"));
         while (scopesScanner.hasNextLine()) {
             String currentLine = scopesScanner.nextLine();
-            if (!currentLine.isEmpty() || !currentLine.isBlank()) {
+            if (!currentLine.isEmpty()) {
                 allScopes.add(scopesScanner.nextLine().replace(",", ""));
             }
         }
@@ -74,7 +74,6 @@ public class TokenGenerator {
 
         //GetZipPassword
         System.out.println("Enter Oauth2 credentials zip file password:");
-        Console console = System.console();
         String credentialsPassword =
                 //console.readPassword("Enter Oauth2 credentials zip file password: ").toString();
                 new BufferedReader(new InputStreamReader(System.in)).readLine().replace("\n", "");
@@ -139,6 +138,5 @@ public class TokenGenerator {
             return null;
         }
     }
-
 
 }
