@@ -23,7 +23,7 @@ public class TokenGenerator {
     private static final HttpTransport HTTP_TRANSPORT = new NetHttpTransport();
     private static final JacksonFactory JSON_FACTORY = new JacksonFactory();
 
-    static public void createConfigurationFile(String configurationName) throws IOException, ZipException {
+    static public void createConfigurationFile(String appName) throws IOException, ZipException {
         System.out.println("************* Google Token Generator Begin *************");
 
         /**--------------Do Scopes stuff--------------*/
@@ -98,7 +98,7 @@ public class TokenGenerator {
         Credential credential = new AuthorizationCodeInstalledApp(flow, new LocalServerReceiver()).authorize(adminEmail);
         System.out.println("Google Authentication Flow ended....");
         /**--------------Store tokens and settings in json file--------------*/
-        System.out.println("Writing configuration data to ," + configurationName + "_configuration.json");
+        System.out.println("Writing configuration data to ," + appName + "_configuration.json");
         Map<String, String> configurationJsonTemplate = new HashMap<>();
         configurationJsonTemplate.put("ACCESS_TOKEN", credential.getAccessToken());
         configurationJsonTemplate.put("REFRESH_TOKEN", credential.getRefreshToken());
@@ -107,10 +107,10 @@ public class TokenGenerator {
         //configurationJsonTemplate.put("SERVICE_ACCOUNT_EMAIL", "");//TODO: Client_Email from serviceAccountKey or not???
         configurationJsonTemplate.put("CREDENTIALS_FILE_PATH", zipPath);
         configurationJsonTemplate.put("CREDENTIALS_PASSWORD", encodeString(credentialsPassword));
-        FileWriter writer = new FileWriter(new java.io.File(configurationName + "_configuration.json").getAbsolutePath());
+        FileWriter writer = new FileWriter(new java.io.File(appName + "_google.json").getAbsolutePath());
         writer.write(new GsonBuilder().setPrettyPrinting().create().toJson(configurationJsonTemplate));
         writer.close();
-        System.out.println("Configuration file ," + configurationName + "_configuration.json created successfully...");
+        System.out.println("Configuration file ," + appName + "_configuration.json created successfully...");
         System.out.println("************  Google Token Generator End ************");
     }
 
