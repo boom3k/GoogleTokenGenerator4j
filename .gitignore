@@ -21,6 +21,7 @@ target
 *.eml
 *.iml
 .gradle
+*credentials.zip
 logs
 .vscode
 workspace.xml

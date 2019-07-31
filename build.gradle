@@ -15,7 +15,7 @@ repositories {
 }
 
 dependencies {
-    implementation 'com.github.boom3k:zip3k:d28c0c76d2'
+    implementation 'com.github.boom3k:zip3k:5b93c26961'
     
     //DoItAll Google authentication dependencies
     compile group: 'com.google.api-client', name: 'google-api-client', version: '1.28.0'
