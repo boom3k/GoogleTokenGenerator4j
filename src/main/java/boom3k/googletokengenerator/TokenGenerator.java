@@ -1,4 +1,4 @@
-package com.boom3k.googletokengenerator;
+package boom3k.googletokengenerator;
 
 import boom3k.Zip3k;
 import com.google.api.client.auth.oauth2.Credential;
@@ -23,42 +23,49 @@ public class TokenGenerator {
     private static final HttpTransport HTTP_TRANSPORT = new NetHttpTransport();
     private static final JacksonFactory JSON_FACTORY = new JacksonFactory();
 
-    static public void createConfigurationFile(String applicationName) throws IOException, ZipException {
-        createConfigurationFile(applicationName,"","","");
-    }
-
-    static public void createConfigurationFile(String applicationName, String adminEmail, String credentialsFilePath, String credentialsZipPassword) throws IOException, ZipException {
+    static public void createConfigurationFile(String applicationName, String adminEmail, String credentialsFilePath, String credentialsZipPassword, boolean usesAdminSDK) throws IOException, ZipException {
         System.out.println("************* Google Token Generator Begin *************");
-
         /**--------------Do Scopes stuff--------------*/
         //Set admin scopes
-        final String[] adminSDKScopes = new String[]{
-                "https://www.googleapis.com/auth/admin.reports.audit.readonly",
-                "https://www.googleapis.com/auth/admin.reports.usage.readonly",
-                "https://www.googleapis.com/auth/admin.directory.user",
-                "https://www.googleapis.com/auth/admin.directory.group",
-                "https://www.googleapis.com/auth/admin.directory.group.member",
-                "https://www.googleapis.com/auth/admin.directory.customer",
-                "https://www.googleapis.com/auth/admin.directory.domain",
-                "https://www.googleapis.com/auth/apps.groups.settings"
-        };
+        ArrayList<String> adminSDKScopes = new ArrayList<>();
+        {
+            adminSDKScopes.add("https://www.googleapis.com/auth/admin.reports.audit.readonly");
+            adminSDKScopes.add("https://www.googleapis.com/auth/admin.reports.usage.readonly");
+            adminSDKScopes.add("https://www.googleapis.com/auth/admin.directory.user");
+            adminSDKScopes.add("https://www.googleapis.com/auth/admin.directory.group.member");
+            adminSDKScopes.add("https://www.googleapis.com/auth/admin.directory.group");
+            adminSDKScopes.add("https://www.googleapis.com/auth/admin.directory.customer");
+            adminSDKScopes.add("https://www.googleapis.com/auth/admin.directory.domain");
+            adminSDKScopes.add("https://www.googleapis.com/auth/apps.groups.settings");
+            adminSDKScopes.add("https://www.googleapis.com/auth/androidmanagement");
+            adminSDKScopes.add("https://www.googleapis.com/auth/apps.groups.migration");
+            adminSDKScopes.add("https://www.googleapis.com/auth/apps.groups.settings");
+            adminSDKScopes.add("https://www.googleapis.com/auth/admin.datatransfer");
+            adminSDKScopes.add("https://www.googleapis.com/auth/cloud-platform");
+            adminSDKScopes.add("https://www.googleapis.com/auth/cloud_search");
+        }
 
-        //Set serviceaccount scopes
-        ArrayList<String> allScopes = new ArrayList<>();
 
+        //Set user scopes
+        ArrayList<String> userScopes = new ArrayList<>();
         Scanner scopesScanner = new Scanner(new File("scopes.txt"));
         while (scopesScanner.hasNextLine()) {
             String currentLine = scopesScanner.nextLine();
             if (!currentLine.isEmpty() && currentLine.startsWith("https://")) {
                 if (currentLine.contains(",")) {
-                    allScopes.add(currentLine.replace(",", ""));
+                    userScopes.add(currentLine.replace(",", ""));
                     continue;
                 }
-                allScopes.add(currentLine);
+                userScopes.add(currentLine);
             }
         }
 
-        allScopes.addAll(Arrays.asList(adminSDKScopes));
+        ArrayList<String> allScopes = new ArrayList<>();
+        if(usesAdminSDK == true){
+            allScopes.addAll(adminSDKScopes);
+        }
+        allScopes.addAll(userScopes);
+
         System.out.println("Project Scopes: ");
         final ImmutableSet<String> SCOPES_SET = ImmutableSet.copyOf(allScopes);
         SCOPES_SET.forEach(s -> System.out.println(s));
@@ -90,7 +97,7 @@ public class TokenGenerator {
         //Get files file from zip
         System.out.println("ZipFile: " + credentialsFilePath + " > Attempting to unlock..");
         Map<String, InputStream> zipFiles = Zip3k.getAllZippedFiles(credentialsFilePath, credentialsZipPassword);
-        System.out.println("ZipFile: ," + credentialsFilePath + " > Successfully unlocked!");
+        System.out.println("ZipFile: " + credentialsFilePath + " > Successfully unlocked!");
 
         //Get ClientSecrets file from zip
         GoogleClientSecrets googleClientSecrets = new GoogleClientSecrets();
@@ -109,9 +116,9 @@ public class TokenGenerator {
 
         //Set GoogleClientSecrets from clientsecret json file
         System.out.println("Reading ClientSecrets file...");
-        System.out.println("Project ClientId: ," + googleClientSecrets.getInstalled().getClientId());
-        System.out.println("Project  AuthURI: ," + googleClientSecrets.getInstalled().getAuthUri());
-        System.out.println("Project TokenURI: ," + googleClientSecrets.getInstalled().getTokenUri());
+        System.out.println("Project ClientId: " + googleClientSecrets.getInstalled().getClientId());
+        System.out.println("Project  AuthURI: " + googleClientSecrets.getInstalled().getAuthUri());
+        System.out.println("Project TokenURI: " + googleClientSecrets.getInstalled().getTokenUri());
 
 
         /**--------------Authentication with Google AuthFlow--------------*/
@@ -134,11 +141,17 @@ public class TokenGenerator {
         //configurationJsonTemplate.put("SERVICE_ACCOUNT_EMAIL", "");//TODO: Client_Email from serviceAccountKey or not???
         configurationJsonTemplate.put("CREDENTIALS_FILE_PATH", credentialsFilePath);
         configurationJsonTemplate.put("CREDENTIALS_PASSWORD", Base64.getEncoder().encodeToString(credentialsZipPassword.getBytes()));
+        configurationJsonTemplate.put("ADMIN_SCOPES", adminSDKScopes.toString());
+        configurationJsonTemplate.put("USER_SCOPES", userScopes.toString());
         FileWriter writer = new FileWriter(new java.io.File(applicationName + "_google.json").getAbsolutePath());
         writer.write(new GsonBuilder().setPrettyPrinting().create().toJson(configurationJsonTemplate));
         writer.close();
         System.out.println("Configuration file ," + applicationName + "_configuration.json created successfully...");
         System.out.println("************  Google Token Generator End ************");
+    }
+
+    static public void createConfigurationFile(String applicationName, boolean usesAdminSDK) throws IOException, ZipException {
+        createConfigurationFile(applicationName, "", "", "",usesAdminSDK);
     }
 
     private static File getFileFromJFC(String startPath, String title, String buttonTitle) {
