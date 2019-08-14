@@ -59,6 +59,7 @@ public class TokenGenerator {
                 userScopes.add(currentLine);
             }
         }
+        scopesScanner.close();
 
         ArrayList<String> allScopes = new ArrayList<>();
         if(usesAdminSDK == true){
