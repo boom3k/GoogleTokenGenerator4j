@@ -108,20 +108,18 @@ public class GoogleTokenGenerator {
         /**--------------Credentials Zip File--------------*/
         //GetZip
         System.out.println("Select zipped Google Oauth2 Credentials in separate window");
-        if (credentialsFilePath == "") {
-            credentialsFilePath = getFileFromJFC(new File("").getAbsolutePath(),
-                    "ZipFilePath",
-                    "Select")
-                    .getPath();
-        }
+        credentialsFilePath = getFileFromJFC(new File("").getAbsolutePath(),
+                "ZipFilePath",
+                "Select")
+                .getPath();
+
 
         //GetZipPassword
         System.out.println("Enter credentials zip file password:");
-        if (credentialsZipPassword == "") {
-            credentialsZipPassword =
-                    //console.readPassword("Enter Oauth2 credentials zip file password: ").toString();
-                    new BufferedReader(new InputStreamReader(System.in)).readLine().replace("\n", "");
-        }
+        credentialsZipPassword =
+                //console.readPassword("Enter Oauth2 credentials zip file password: ").toString();
+                new BufferedReader(new InputStreamReader(System.in)).readLine().replace("\n", "");
+
 
         //Get files file from zip
         System.out.println("ZipFile: " + credentialsFilePath + " > Attempting to unlock..");
@@ -163,6 +161,7 @@ public class GoogleTokenGenerator {
         /**--------------Store tokens and settings in json file--------------*/
         System.out.println("Writing configuration data to  a new google.json file");
         Map<String, String> configurationJsonTemplate = new HashMap<>();
+        configurationJsonTemplate.put("DATE_CREATED", new Date().toString());
         configurationJsonTemplate.put("ACCESS_TOKEN", credential.getAccessToken());
         configurationJsonTemplate.put("REFRESH_TOKEN", credential.getRefreshToken());
         configurationJsonTemplate.put("DOMAIN", domain);
