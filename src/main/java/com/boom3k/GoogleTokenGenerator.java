@@ -1,4 +1,4 @@
-package boom3k.googletokengenerator;
+package com.boom3k;
 
 import boom3k.Zip3k;
 import com.google.api.client.auth.oauth2.Credential;
@@ -11,6 +11,8 @@ import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.jackson2.JacksonFactory;
 import com.google.common.collect.ImmutableSet;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import net.lingala.zip4j.exception.ZipException;
 
 import javax.swing.*;
@@ -19,11 +21,35 @@ import java.io.*;
 import java.util.*;
 
 
-public class TokenGenerator {
+public class GoogleTokenGenerator {
+    private static final String classPath = new File("").getAbsolutePath();
+
     private static final HttpTransport HTTP_TRANSPORT = new NetHttpTransport();
     private static final JacksonFactory JSON_FACTORY = new JacksonFactory();
+    private static BufferedReader configurationInputReader = new BufferedReader(new InputStreamReader(System.in));
+    private static boolean usesAdminSDK = false;
+    private static JsonObject configurationJson;
+    private static String configFileName = "google.json";
+    private static String adminEmail;
+    private static String credentialsFilePath;
+    private static String credentialsZipPassword;
 
-    static public void createConfigurationFile(String applicationName, String adminEmail, String credentialsFilePath, String credentialsZipPassword, boolean usesAdminSDK) throws IOException, ZipException {
+
+    public static void main(String[] args) throws IOException, ZipException {
+        System.out.println("Beginning the configuration.json creation process.." +
+                "\nPlease place the 'scopes.txt' and your encrypted clientsecrets and/or serviceaccountkey zip folder in this location {" + classPath + "}" +
+                "\nPress Enter once both files are set..");
+        configurationInputReader.readLine();
+        System.out.println("Will this client require usage Google's AdminSDK? (Y/N)");
+        if (configurationInputReader.readLine().toLowerCase().startsWith("y")) {
+            usesAdminSDK = true;
+        }
+        System.out.println("AdminSDK used = " + usesAdminSDK);
+        createConfigurationFile(usesAdminSDK);
+        configurationJson = (JsonObject) new JsonParser().parse(new FileReader(configFileName));
+    }
+
+    static public void createConfigurationFile(boolean usesAdminSDK) throws IOException, ZipException {
         System.out.println("************* Google Token Generator Begin *************");
         /**--------------Do Scopes stuff--------------*/
         //Set admin scopes
@@ -35,6 +61,7 @@ public class TokenGenerator {
             adminSDKScopes.add("https://www.googleapis.com/auth/admin.directory.group.member");
             adminSDKScopes.add("https://www.googleapis.com/auth/admin.directory.group");
             adminSDKScopes.add("https://www.googleapis.com/auth/admin.directory.customer");
+            adminSDKScopes.add("https://www.googleapis.com/auth/admin.directory.resource.calendar");
             adminSDKScopes.add("https://www.googleapis.com/auth/admin.directory.domain");
             adminSDKScopes.add("https://www.googleapis.com/auth/apps.groups.settings");
             adminSDKScopes.add("https://www.googleapis.com/auth/androidmanagement");
@@ -43,6 +70,7 @@ public class TokenGenerator {
             adminSDKScopes.add("https://www.googleapis.com/auth/admin.datatransfer");
             adminSDKScopes.add("https://www.googleapis.com/auth/cloud-platform");
             adminSDKScopes.add("https://www.googleapis.com/auth/cloud_search");
+            adminSDKScopes.add("https://www.googleapis.com/auth/ediscovery");
         }
 
 
@@ -62,7 +90,7 @@ public class TokenGenerator {
         scopesScanner.close();
 
         ArrayList<String> allScopes = new ArrayList<>();
-        if(usesAdminSDK == true){
+        if (usesAdminSDK == true) {
             allScopes.addAll(adminSDKScopes);
         }
         allScopes.addAll(userScopes);
@@ -72,9 +100,9 @@ public class TokenGenerator {
         SCOPES_SET.forEach(s -> System.out.println(s));
 
         System.out.println("Enter your admin account email:");
-        if (adminEmail == "") {
-            adminEmail = new BufferedReader(new InputStreamReader(System.in)).readLine();
-        }
+
+        adminEmail = new BufferedReader(new InputStreamReader(System.in)).readLine();
+
         String domain = adminEmail.substring(adminEmail.lastIndexOf("@") + 1);
 
         /**--------------Credentials Zip File--------------*/
@@ -133,26 +161,21 @@ public class TokenGenerator {
 
 
         /**--------------Store tokens and settings in json file--------------*/
-        System.out.println("Writing configuration data to ," + applicationName + "_configuration.json");
+        System.out.println("Writing configuration data to  a new google.json file");
         Map<String, String> configurationJsonTemplate = new HashMap<>();
         configurationJsonTemplate.put("ACCESS_TOKEN", credential.getAccessToken());
         configurationJsonTemplate.put("REFRESH_TOKEN", credential.getRefreshToken());
         configurationJsonTemplate.put("DOMAIN", domain);
         configurationJsonTemplate.put("ADMIN_EMAIL", adminEmail);
-        //configurationJsonTemplate.put("SERVICE_ACCOUNT_EMAIL", "");//TODO: Client_Email from serviceAccountKey or not???
         configurationJsonTemplate.put("CREDENTIALS_FILE_PATH", credentialsFilePath);
         configurationJsonTemplate.put("CREDENTIALS_PASSWORD", Base64.getEncoder().encodeToString(credentialsZipPassword.getBytes()));
         configurationJsonTemplate.put("ADMIN_SCOPES", adminSDKScopes.toString());
         configurationJsonTemplate.put("USER_SCOPES", userScopes.toString());
-        FileWriter writer = new FileWriter(new java.io.File(applicationName + "_google.json").getAbsolutePath());
+        FileWriter writer = new FileWriter(new java.io.File("google.json").getAbsolutePath());
         writer.write(new GsonBuilder().setPrettyPrinting().create().toJson(configurationJsonTemplate));
         writer.close();
-        System.out.println("Configuration file ," + applicationName + "_configuration.json created successfully...");
+        System.out.println("Configuration file google.json created successfully...");
         System.out.println("************  Google Token Generator End ************");
-    }
-
-    static public void createConfigurationFile(String applicationName, boolean usesAdminSDK) throws IOException, ZipException {
-        createConfigurationFile(applicationName, "", "", "",usesAdminSDK);
     }
 
     private static File getFileFromJFC(String startPath, String title, String buttonTitle) {

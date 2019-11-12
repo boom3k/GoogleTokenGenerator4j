@@ -1,13 +1,7 @@
-import boom3k.googletokengenerator.TokenGenerator;
-import net.lingala.zip4j.exception.ZipException;
-import org.junit.Test;
-
-import java.io.IOException;
-
 public class Tests {
     /*@Test
     public void test() throws IOException, ZipException {
-        TokenGenerator.createConfigurationFile(
+        com.boom3k.TokenGenerator.createConfigurationFile(
                 "TestApp",
                 "rhenderson.da@usaid.gov",
                 "da_credentials.zip",
