@@ -70,6 +70,7 @@ public class GoogleTokenGenerator {
             adminSDKScopes.add("https://www.googleapis.com/auth/admin.datatransfer");
             adminSDKScopes.add("https://www.googleapis.com/auth/cloud-platform");
             adminSDKScopes.add("https://www.googleapis.com/auth/cloud_search");
+            adminSDKScopes.add("https://www.googleapis.com/auth/apps.licensing");
             adminSDKScopes.add("https://www.googleapis.com/auth/ediscovery");
         }
 
