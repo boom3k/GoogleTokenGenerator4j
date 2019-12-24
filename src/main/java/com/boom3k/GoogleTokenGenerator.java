@@ -30,7 +30,7 @@ public class GoogleTokenGenerator {
     private static boolean usesAdminSDK = false;
     private static JsonObject configurationJson;
     private static String configFileName = "google.json";
-    private static String adminEmail;
+    private static String userEmail;
     private static String credentialsFilePath;
     private static String credentialsZipPassword;
 
@@ -100,11 +100,11 @@ public class GoogleTokenGenerator {
         final ImmutableSet<String> SCOPES_SET = ImmutableSet.copyOf(allScopes);
         SCOPES_SET.forEach(s -> System.out.println(s));
 
-        System.out.println("Enter your admin account email:");
+        System.out.println("Enter your account email:");
 
-        adminEmail = new BufferedReader(new InputStreamReader(System.in)).readLine();
+        userEmail = new BufferedReader(new InputStreamReader(System.in)).readLine();
 
-        String domain = adminEmail.substring(adminEmail.lastIndexOf("@") + 1);
+        String domain = userEmail.substring(userEmail.lastIndexOf("@") + 1);
 
         /**--------------Credentials Zip File--------------*/
         //GetZip
@@ -155,7 +155,7 @@ public class GoogleTokenGenerator {
                 .Builder(HTTP_TRANSPORT, JSON_FACTORY, googleClientSecrets, SCOPES_SET.asList())
                 .setAccessType("offline")
                 .build();
-        Credential credential = new AuthorizationCodeInstalledApp(flow, new LocalServerReceiver()).authorize(adminEmail);
+        Credential credential = new AuthorizationCodeInstalledApp(flow, new LocalServerReceiver()).authorize(userEmail);
         System.out.println("Google Authentication Flow ended....");
 
 
@@ -166,7 +166,7 @@ public class GoogleTokenGenerator {
         configurationJsonTemplate.put("ACCESS_TOKEN", credential.getAccessToken());
         configurationJsonTemplate.put("REFRESH_TOKEN", credential.getRefreshToken());
         configurationJsonTemplate.put("DOMAIN", domain);
-        configurationJsonTemplate.put("ADMIN_EMAIL", adminEmail);
+        configurationJsonTemplate.put("USER_EMAIL", userEmail);
         configurationJsonTemplate.put("CREDENTIALS_FILE_PATH", credentialsFilePath);
         configurationJsonTemplate.put("CREDENTIALS_PASSWORD", Base64.getEncoder().encodeToString(credentialsZipPassword.getBytes()));
         configurationJsonTemplate.put("ADMIN_SCOPES", adminSDKScopes.toString());
