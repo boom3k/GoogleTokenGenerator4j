@@ -175,11 +175,14 @@ public class GoogleTokenGenerator {
         configurationJsonTemplate.put("REFRESH_TOKEN", credential.getRefreshToken());
         configurationJsonTemplate.put("ADMIN_SCOPES", adminSDKScopes.toString());
         configurationJsonTemplate.put("USER_SCOPES", userScopes.toString());
-        System.out.println("Place config file inside of zip folder?");
-        if (configurationInputReader.readLine().toLowerCase().startsWith("y")) {
-            FileWriter writer = new FileWriter(new java.io.File(configFileName).getAbsolutePath());
+        configurationJsonTemplate.put("CREDENTIALS_FILE_PATH", credentialsFilePath);
+        configurationJsonTemplate.put("CREDENTIALS_PASSWORD", Base64.getEncoder().encodeToString(credentialsZipPassword.getBytes()));
+        FileWriter writer = new FileWriter(new java.io.File(configFileName).getAbsolutePath());
             writer.write(new GsonBuilder().setPrettyPrinting().create().toJson(configurationJsonTemplate));
             writer.close();
+        System.out.println("Place config file inside of zip folder? (y/n)");
+
+        if (configurationInputReader.readLine().toLowerCase().startsWith("y")) {
             Zip3k.insertFileToZip(
                     credentialsFilePath,
                     new File(configFileName),
@@ -187,11 +190,6 @@ public class GoogleTokenGenerator {
             Files.delete(Paths.get(configFileName));
             System.out.println("Configuration file [" + configFileName + "] created in " + credentialsFilePath + " successfully...");
         } else {
-            configurationJsonTemplate.put("CREDENTIALS_FILE_PATH", credentialsFilePath);
-            configurationJsonTemplate.put("CREDENTIALS_PASSWORD", Base64.getEncoder().encodeToString(credentialsZipPassword.getBytes()));
-            FileWriter writer = new FileWriter(new java.io.File(configFileName).getAbsolutePath());
-            writer.write(new GsonBuilder().setPrettyPrinting().create().toJson(configurationJsonTemplate));
-            writer.close();
             System.out.println("Configuration file [" + configFileName + "] created in " + classPath + " successfully...");
         }
         System.out.println("************  Google Token Generator End ************");
