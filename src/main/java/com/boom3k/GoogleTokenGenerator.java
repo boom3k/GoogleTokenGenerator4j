@@ -11,10 +11,7 @@ import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.jackson2.JacksonFactory;
 import com.google.common.collect.ImmutableSet;
 import com.google.gson.GsonBuilder;
-import com.google.gson.JsonObject;
-import net.lingala.zip4j.core.ZipFile;
 import net.lingala.zip4j.exception.ZipException;
-import net.lingala.zip4j.model.ZipParameters;
 
 import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
@@ -31,6 +28,9 @@ public class GoogleTokenGenerator {
     private static BufferedReader configurationInputReader = new BufferedReader(new InputStreamReader(System.in));
     private static boolean usesAdminSDK = false;
     private static ArrayList<String> adminSDKScopes = new ArrayList<>();
+    private static String zipPassword;
+    private static List<File> files = new ArrayList<>();
+    private static String zipFileName;
 
     static {
         adminSDKScopes.add("https://www.googleapis.com/auth/admin.reports.audit.readonly");
@@ -53,15 +53,15 @@ public class GoogleTokenGenerator {
     }
 
     private static String configFileName;
-    private static final String getConfigFileNameAppender = "_google_credentials.json";
+    private static final String getConfigFileNameAppender = "_google_config.json";
     private static String userEmail;
     private static String username;
-
     private static String domain;
     private static String credentialsFilePath;
     private static File serviceAccountKey;
     private static String credentialsZipPassword;
     private static String projectId;
+    private static GoogleClientSecrets googleClientSecrets = new GoogleClientSecrets();
     private static ImmutableSet<String> SCOPES_SET;
     private static ArrayList<String> userScopes = new ArrayList<>();
 
@@ -69,7 +69,7 @@ public class GoogleTokenGenerator {
     public static void main(String[] args) throws IOException, ZipException {
 
         System.out.println("Beginning the GoogleTokenGenerator process.." +
-                "\nPlease have your scopes text file and credentials ready.\nA google.json file will be placed in {" + classPath + "} once the program authorizes the client" +
+                "\nPlease have your scopes text file and credentials ready.\nA **_google_config.zip file will be placed in {" + classPath + "} once the program authorizes the client" +
                 "\nPress Enter to begin...");
         configurationInputReader.readLine();
         System.out.println("Enter your account email:");
@@ -85,69 +85,54 @@ public class GoogleTokenGenerator {
 
     static public void createConfigurationFile() throws IOException, ZipException {
         /**--------------Credentials Zip File--------------*/
-        //GetZip
-        System.out.println("Please use the Java window to specify the location of the zipped Google credentials");
-
-        credentialsFilePath = getFileFromJFC(classPath,
-                "ZipFilePath",
+        System.out.println("Please use the Java window to select the Google Client Secrets file");
+        File clientSecretsFile = getFileFromJFC(classPath,
+                "Please select the Google Client Secret File",
                 "Select",
-                "Zip File",
-                "zip")
-                .getPath();
+                "Google ClientSecret File",
+                "json");
+        files.add(clientSecretsFile);
 
+        System.out.println("Please use the Java window to select the scopes text file");
+        File scopesFile = getFileFromJFC(clientSecretsFile.getPath(),
+                "Please select the scopes text file",
+                "Select",
+                "Scopes text file",
+                "txt");
 
-        //GetZipPassword
-        //credentialsZipPassword = console.readPassword("Enter credentials zip file password: ").toString();
-        System.out.println("Enter credentials zip file password:");
-        credentialsZipPassword = new BufferedReader(new InputStreamReader(System.in)).readLine().replace("\n", "");
-
-
-        //Get files file from zip
-        System.out.println("ZipFile: " + credentialsFilePath + " > Attempting to unlock..");
-        Map<String, InputStream> zipFiles = Zip3k.getAllZippedFiles(credentialsFilePath, credentialsZipPassword);
-        System.out.println("ZipFile: " + credentialsFilePath + " > Successfully unlocked!");
-
-        //Get ClientSecrets file from zip
-        GoogleClientSecrets googleClientSecrets = new GoogleClientSecrets();
-        for (String fileName : zipFiles.keySet()) {
-            if (fileName.contains("google_credentials")) {
-                continue;
-            }
-            if (fileName.contains("scopes.txt")) {
-                //Set user scopes
-                Scanner scopesScanner = new Scanner(zipFiles.get(fileName));
-                while (scopesScanner.hasNextLine()) {
-                    String currentLine = scopesScanner.nextLine();
-                    if (!currentLine.isEmpty() && currentLine.startsWith("https://")) {
-                        if (currentLine.contains(",")) {
-                            userScopes.add(currentLine.replace(",", ""));
-                            continue;
-                        }
-                        userScopes.add(currentLine);
-                    }
+        Scanner scopesScanner = new Scanner(new FileReader(scopesFile));
+        while (scopesScanner.hasNextLine()) {
+            String currentLine = scopesScanner.nextLine();
+            if (!currentLine.isEmpty() && currentLine.startsWith("https://")) {
+                if (currentLine.contains(",")) {
+                    userScopes.add(currentLine.replace(",", ""));
+                    continue;
                 }
-                scopesScanner.close();
-                ArrayList<String> allScopes = new ArrayList<>();
-                if (usesAdminSDK == true) {
-                    allScopes.addAll(adminSDKScopes);
-                }
-                allScopes.addAll(userScopes);
-                System.out.println("Project Scopes: ");
-                SCOPES_SET = ImmutableSet.copyOf(allScopes);
-                SCOPES_SET.forEach(s -> System.out.println(s));
-            }
-
-            if (fileName.contains(".json")) {
-                InputStream is = zipFiles.get(fileName);
-                try {
-                    googleClientSecrets = GoogleClientSecrets.load(JSON_FACTORY, new InputStreamReader(is));
-                } catch (Exception e) {
-                    System.out.println(fileName + " is not a clientSecrets file.");
-                }
+                userScopes.add(currentLine);
             }
         }
+        scopesScanner.close();
+        ArrayList<String> allScopes = new ArrayList<>();
+        if (usesAdminSDK == true) {
+            allScopes.addAll(adminSDKScopes);
+        }
+        allScopes.addAll(userScopes);
+        System.out.println("Project Scopes: ");
+        SCOPES_SET = ImmutableSet.copyOf(allScopes);
+        SCOPES_SET.forEach(s -> System.out.println(s));
 
-        //Set GoogleClientSecrets from clientsecrets json file
+        System.out.println("Will this application require a serviceAccountKey? (y/n)");
+        if (configurationInputReader.readLine().toLowerCase().contains("y")) {
+            System.out.println("Please use the Java window to select the Service AccountKey file");
+            File serviceAccountKeyFile = getFileFromJFC(clientSecretsFile.getPath(),
+                    "Service AccountKey file",
+                    "Select",
+                    "Service AccountKey file",
+                    "json");
+            files.add(serviceAccountKeyFile);
+        }
+
+        googleClientSecrets = GoogleClientSecrets.load(JSON_FACTORY, new FileReader(clientSecretsFile));
         System.out.println("Reading ClientSecrets file...");
         System.out.println("Project ClientId: " + googleClientSecrets.getInstalled().getClientId());
         System.out.println("Project  AuthURI: " + googleClientSecrets.getInstalled().getAuthUri());
@@ -176,23 +161,19 @@ public class GoogleTokenGenerator {
         configurationJsonTemplate.put("ADMIN_SCOPES", adminSDKScopes.toString());
         configurationJsonTemplate.put("USER_SCOPES", userScopes.toString());
         configurationJsonTemplate.put("CREDENTIALS_FILE_PATH", credentialsFilePath);
-        configurationJsonTemplate.put("CREDENTIALS_PASSWORD", Base64.getEncoder().encodeToString(credentialsZipPassword.getBytes()));
-        FileWriter writer = new FileWriter(new java.io.File(configFileName).getAbsolutePath());
-            writer.write(new GsonBuilder().setPrettyPrinting().create().toJson(configurationJsonTemplate));
-            writer.close();
-        System.out.println("Place config file inside of zip folder? (y/n)");
-
-        if (configurationInputReader.readLine().toLowerCase().startsWith("y")) {
-            Zip3k.insertFileToZip(
-                    credentialsFilePath,
-                    new File(configFileName),
-                    credentialsZipPassword);
-            Files.delete(Paths.get(configFileName));
-            System.out.println("Configuration file [" + configFileName + "] created in " + credentialsFilePath + " successfully...");
-        } else {
-            System.out.println("Configuration file [" + configFileName + "] created in " + classPath + " successfully...");
-        }
+        System.out.println("Enter file password: ");
+        zipPassword = configurationInputReader.readLine();
+        File configFile = new File(configFileName);
+        FileWriter writer = new FileWriter(configFile);
+        writer.write(new GsonBuilder().setPrettyPrinting().create().toJson(configurationJsonTemplate));
+        writer.close();
+        files.add(configFile);
+        zipFileName = username + "_" + projectId;
+        Zip3k.zipFile(zipFileName, files, zipPassword);
+        Files.delete(Paths.get(configFile.getAbsolutePath()));
+        System.out.println("Configuration file [" + configFileName + "] created in " + credentialsFilePath + " successfully...");
         System.out.println("************  Google Token Generator End ************");
+
     }
 
     public static File getFileFromJFC(String startPath, String title, String buttonTitle, String fileDescription, String fileExtensions) {
