@@ -164,7 +164,7 @@ public class GoogleTokenGenerator {
         zipPassword = configurationInputReader.readLine();
         do {
             System.out.println("Please enter the file password again for validation: ");
-        } while (zipPassword != configurationInputReader.readLine().trim());
+        } while (!zipPassword.equals(configurationInputReader.readLine()));
 
 
         File configFile = new File(configFileName);
