@@ -65,7 +65,6 @@ public class GoogleTokenGenerator {
     private static ImmutableSet<String> SCOPES_SET;
     private static ArrayList<String> userScopes = new ArrayList<>();
 
-
     public static void main(String[] args) throws IOException, ZipException {
 
         System.out.println("Beginning the GoogleTokenGenerator process.." +
@@ -163,6 +162,11 @@ public class GoogleTokenGenerator {
         configurationJsonTemplate.put("CREDENTIALS_FILE_PATH", credentialsFilePath);
         System.out.println("Enter file password: ");
         zipPassword = configurationInputReader.readLine();
+        do {
+            System.out.println("Please enter the file password again for validation: ");
+        } while (zipPassword != configurationInputReader.readLine().trim());
+
+
         File configFile = new File(configFileName);
         FileWriter writer = new FileWriter(configFile);
         writer.write(new GsonBuilder().setPrettyPrinting().create().toJson(configurationJsonTemplate));
