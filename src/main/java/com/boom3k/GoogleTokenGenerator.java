@@ -70,6 +70,7 @@ public class GoogleTokenGenerator {
 
     public static void main(String[] args) throws IOException, ZipException {
         if (args.length > 0) {
+            System.out.println("Default ClientId Set....");
             argsGiven = true;
             clientID = args[0];
             projectId = args[1];
