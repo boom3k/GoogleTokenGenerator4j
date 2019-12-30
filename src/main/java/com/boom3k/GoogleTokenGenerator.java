@@ -31,6 +31,7 @@ public class GoogleTokenGenerator {
     private static String zipPassword;
     private static List<File> files = new ArrayList<>();
     private static String zipFileName;
+
     static {
         adminSDKScopes.add("https://www.googleapis.com/auth/admin.reports.audit.readonly");
         adminSDKScopes.add("https://www.googleapis.com/auth/admin.reports.usage.readonly");
@@ -50,6 +51,7 @@ public class GoogleTokenGenerator {
         adminSDKScopes.add("https://www.googleapis.com/auth/apps.licensing");
         adminSDKScopes.add("https://www.googleapis.com/auth/ediscovery");
     }
+
     private static String configFileName;
     private static final String getConfigFileNameAppender = "_google_config.json";
     private static String userEmail;
@@ -67,12 +69,19 @@ public class GoogleTokenGenerator {
     private static String clientID;
 
     public static void main(String[] args) throws IOException, ZipException {
-        if(args.length == 1){
+        if (args.length > 0) {
             argsGiven = true;
             clientID = args[0];
-            googleClientSecrets.getDetails().setClientId(clientID);
-        }
-
+            projectId = args[1];
+            List<String> redirectUris = new ArrayList<>();
+            redirectUris.add("urn:ietf:wg:oauth:2.0:oob");
+            redirectUris.add("http:..localhost");
+            googleClientSecrets = new GoogleClientSecrets().setInstalled(new GoogleClientSecrets.Details()
+                    .setClientId(clientID)
+                    .setAuthUri("https://accounts.google.com/o/oauth2/auth")
+                    .setTokenUri("https://oauth2.googleapis.com/token")
+                    .setRedirectUris(redirectUris));
+        } else System.out.println("No initial params found....");
         System.out.println("Beginning the GoogleTokenGenerator process.." +
                 "\nPlease have your scopes text file and credentials ready.\nA **_google_config.zip file will be placed in {" + classPath + "} once the program authorizes the client" +
                 "\nPress Enter to begin...");
@@ -130,12 +139,12 @@ public class GoogleTokenGenerator {
         }
 
 
-        if(argsGiven == true){
+        if (argsGiven == true) {
             System.out.println("Application ClientId: " + clientID +
                     "\n\tPlease enter the associated client secret:");
             clientSecret = configurationInputReader.readLine();
             googleClientSecrets.getDetails().setClientSecret(clientSecret);
-        }else {
+        } else {
             System.out.println("Please use the Java window to select the Google Client Secrets file");
             File clientSecretsFile = getFileFromJFC(scopesFile.getPath(),
                     "Please select the Google Client Secret File",
@@ -145,7 +154,6 @@ public class GoogleTokenGenerator {
             files.add(clientSecretsFile);
             googleClientSecrets = GoogleClientSecrets.load(JSON_FACTORY, new FileReader(clientSecretsFile));
         }
-
 
 
         System.out.println("Reading ClientSecrets file...");
