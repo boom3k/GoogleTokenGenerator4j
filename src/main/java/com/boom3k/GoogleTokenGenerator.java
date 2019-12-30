@@ -31,7 +31,6 @@ public class GoogleTokenGenerator {
     private static String zipPassword;
     private static List<File> files = new ArrayList<>();
     private static String zipFileName;
-
     static {
         adminSDKScopes.add("https://www.googleapis.com/auth/admin.reports.audit.readonly");
         adminSDKScopes.add("https://www.googleapis.com/auth/admin.reports.usage.readonly");
@@ -51,7 +50,6 @@ public class GoogleTokenGenerator {
         adminSDKScopes.add("https://www.googleapis.com/auth/apps.licensing");
         adminSDKScopes.add("https://www.googleapis.com/auth/ediscovery");
     }
-
     private static String configFileName;
     private static final String getConfigFileNameAppender = "_google_config.json";
     private static String userEmail;
@@ -64,8 +62,16 @@ public class GoogleTokenGenerator {
     private static GoogleClientSecrets googleClientSecrets = new GoogleClientSecrets();
     private static ImmutableSet<String> SCOPES_SET;
     private static ArrayList<String> userScopes = new ArrayList<>();
+    private static boolean argsGiven;
+    private static String clientSecret;
+    private static String clientID;
 
     public static void main(String[] args) throws IOException, ZipException {
+        if(args.length == 1){
+            argsGiven = true;
+            clientID = args[0];
+            googleClientSecrets.getDetails().setClientId(clientID);
+        }
 
         System.out.println("Beginning the GoogleTokenGenerator process.." +
                 "\nPlease have your scopes text file and credentials ready.\nA **_google_config.zip file will be placed in {" + classPath + "} once the program authorizes the client" +
@@ -84,16 +90,8 @@ public class GoogleTokenGenerator {
 
     static public void createConfigurationFile() throws IOException, ZipException {
         /**--------------Credentials Zip File--------------*/
-        System.out.println("Please use the Java window to select the Google Client Secrets file");
-        File clientSecretsFile = getFileFromJFC(classPath,
-                "Please select the Google Client Secret File",
-                "Select",
-                "Google ClientSecret File",
-                "json");
-        files.add(clientSecretsFile);
-
-        System.out.println("Please use the Java window to select the scopes text file");
-        File scopesFile = getFileFromJFC(clientSecretsFile.getPath(),
+        System.out.println("Please use the Java window to select the text file with the required scopes");
+        File scopesFile = getFileFromJFC(classPath,
                 "Please select the scopes text file",
                 "Select",
                 "Scopes text file",
@@ -123,7 +121,7 @@ public class GoogleTokenGenerator {
         System.out.println("Will this application require a serviceAccountKey? (y/n)");
         if (configurationInputReader.readLine().toLowerCase().contains("y")) {
             System.out.println("Please use the Java window to select the Service AccountKey file");
-            File serviceAccountKeyFile = getFileFromJFC(clientSecretsFile.getPath(),
+            File serviceAccountKeyFile = getFileFromJFC(scopesFile.getPath(),
                     "Service AccountKey file",
                     "Select",
                     "Service AccountKey file",
@@ -131,7 +129,25 @@ public class GoogleTokenGenerator {
             files.add(serviceAccountKeyFile);
         }
 
-        googleClientSecrets = GoogleClientSecrets.load(JSON_FACTORY, new FileReader(clientSecretsFile));
+
+        if(argsGiven == true){
+            System.out.println("Application ClientId: " + clientID +
+                    "\n\tPlease enter the associated client secret:");
+            clientSecret = configurationInputReader.readLine();
+            googleClientSecrets.getDetails().setClientSecret(clientSecret);
+        }else {
+            System.out.println("Please use the Java window to select the Google Client Secrets file");
+            File clientSecretsFile = getFileFromJFC(scopesFile.getPath(),
+                    "Please select the Google Client Secret File",
+                    "Select",
+                    "Google ClientSecret File",
+                    "json");
+            files.add(clientSecretsFile);
+            googleClientSecrets = GoogleClientSecrets.load(JSON_FACTORY, new FileReader(clientSecretsFile));
+        }
+
+
+
         System.out.println("Reading ClientSecrets file...");
         System.out.println("Project ClientId: " + googleClientSecrets.getInstalled().getClientId());
         System.out.println("Project  AuthURI: " + googleClientSecrets.getInstalled().getAuthUri());
