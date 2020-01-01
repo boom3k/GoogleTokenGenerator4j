@@ -112,7 +112,7 @@ public class GoogleTokenGenerator {
         ArrayList<String> allScopes = new ArrayList<>();
         allScopes.addAll(userScopes);
         System.out.print("Will this application require use of the Google Admin SDK? (y/n): ");
-        if (configurationInputReader.readLine().toLowerCase().startsWith("y")) {
+        if (configurationInputReader.readLine().toLowerCase().contains("y")) {
             allScopes.addAll(adminSDKScopes);
         }
 
