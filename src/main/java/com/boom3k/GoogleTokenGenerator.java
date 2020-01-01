@@ -26,30 +26,9 @@ public class GoogleTokenGenerator {
     private static final HttpTransport HTTP_TRANSPORT = new NetHttpTransport();
     private static final JacksonFactory JSON_FACTORY = new JacksonFactory();
     private static BufferedReader configurationInputReader = new BufferedReader(new InputStreamReader(System.in));
-    private static ArrayList<String> adminSDKScopes = new ArrayList<>();
+    private static ArrayList<String> adminScopes = new ArrayList<>();
     private static String zipPassword;
     private static List<File> files = new ArrayList<>();
-
-    static {
-        adminSDKScopes.add("https://www.googleapis.com/auth/admin.reports.audit.readonly");
-        adminSDKScopes.add("https://www.googleapis.com/auth/admin.reports.usage.readonly");
-        adminSDKScopes.add("https://www.googleapis.com/auth/admin.directory.user");
-        adminSDKScopes.add("https://www.googleapis.com/auth/admin.directory.group.member");
-        adminSDKScopes.add("https://www.googleapis.com/auth/admin.directory.group");
-        adminSDKScopes.add("https://www.googleapis.com/auth/admin.directory.customer");
-        adminSDKScopes.add("https://www.googleapis.com/auth/admin.directory.resource.calendar");
-        adminSDKScopes.add("https://www.googleapis.com/auth/admin.directory.domain");
-        adminSDKScopes.add("https://www.googleapis.com/auth/apps.groups.settings");
-        adminSDKScopes.add("https://www.googleapis.com/auth/androidmanagement");
-        adminSDKScopes.add("https://www.googleapis.com/auth/apps.groups.migration");
-        adminSDKScopes.add("https://www.googleapis.com/auth/apps.groups.settings");
-        adminSDKScopes.add("https://www.googleapis.com/auth/admin.datatransfer");
-        adminSDKScopes.add("https://www.googleapis.com/auth/cloud-platform");
-        adminSDKScopes.add("https://www.googleapis.com/auth/cloud_search");
-        adminSDKScopes.add("https://www.googleapis.com/auth/apps.licensing");
-        adminSDKScopes.add("https://www.googleapis.com/auth/ediscovery");
-    }
-
     private static String appName = "";
     private static final String CONFIG_FILENAME_APPENDER = "_google_config.json";
     private static String userEmail;
@@ -113,7 +92,24 @@ public class GoogleTokenGenerator {
         allScopes.addAll(userScopes);
         System.out.println("Will this application require use of the Google Admin SDK? (y/n): ");
         if (configurationInputReader.readLine().toLowerCase().contains("y")) {
-            allScopes.addAll(adminSDKScopes);
+            adminScopes.add("https://www.googleapis.com/auth/admin.reports.audit.readonly");
+            adminScopes.add("https://www.googleapis.com/auth/admin.reports.usage.readonly");
+            adminScopes.add("https://www.googleapis.com/auth/admin.directory.user");
+            adminScopes.add("https://www.googleapis.com/auth/admin.directory.group.member");
+            adminScopes.add("https://www.googleapis.com/auth/admin.directory.group");
+            adminScopes.add("https://www.googleapis.com/auth/admin.directory.customer");
+            adminScopes.add("https://www.googleapis.com/auth/admin.directory.resource.calendar");
+            adminScopes.add("https://www.googleapis.com/auth/admin.directory.domain");
+            adminScopes.add("https://www.googleapis.com/auth/apps.groups.settings");
+            adminScopes.add("https://www.googleapis.com/auth/androidmanagement");
+            adminScopes.add("https://www.googleapis.com/auth/apps.groups.migration");
+            adminScopes.add("https://www.googleapis.com/auth/apps.groups.settings");
+            adminScopes.add("https://www.googleapis.com/auth/admin.datatransfer");
+            adminScopes.add("https://www.googleapis.com/auth/cloud-platform");
+            adminScopes.add("https://www.googleapis.com/auth/cloud_search");
+            adminScopes.add("https://www.googleapis.com/auth/apps.licensing");
+            adminScopes.add("https://www.googleapis.com/auth/ediscovery");
+            allScopes.addAll(adminScopes);
         }
 
         System.out.println("Project Scopes: ");
@@ -164,7 +160,7 @@ public class GoogleTokenGenerator {
         configurationJsonTemplate.put("USER_EMAIL", userEmail);
         configurationJsonTemplate.put("ACCESS_TOKEN", credential.getAccessToken());
         configurationJsonTemplate.put("REFRESH_TOKEN", credential.getRefreshToken());
-        configurationJsonTemplate.put("ADMIN_SCOPES", adminSDKScopes.toString());
+        configurationJsonTemplate.put("ADMIN_SCOPES", adminScopes.toString());
         configurationJsonTemplate.put("USER_SCOPES", userScopes.toString());
 
         File configFile = new File(username + CONFIG_FILENAME_APPENDER);
