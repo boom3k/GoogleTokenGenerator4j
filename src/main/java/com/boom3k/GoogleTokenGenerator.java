@@ -111,7 +111,7 @@ public class GoogleTokenGenerator {
         scopesScanner.close();
         ArrayList<String> allScopes = new ArrayList<>();
         allScopes.addAll(userScopes);
-        System.out.print("Will this application require use of the Google Admin SDK? (y/n): ");
+        System.out.println("Will this application require use of the Google Admin SDK? (y/n): ");
         if (configurationInputReader.readLine().toLowerCase().contains("y")) {
             allScopes.addAll(adminSDKScopes);
         }
@@ -121,7 +121,7 @@ public class GoogleTokenGenerator {
         SCOPES_SET.forEach(scope -> System.out.println(scope));
 
         /**-------------- Get ServiceAccountKey File --------------*/
-        System.out.print("Will this application require a serviceAccountKey? (y/n): ");
+        System.out.println("Will this application require a serviceAccountKey? (y/n): ");
         if (configurationInputReader.readLine().toLowerCase().contains("y")) {
             System.out.println("Please use the Java window to select the Service AccountKey file");
             File serviceAccountKeyFile = getFileFromJFC(scopesFile.getPath(),
