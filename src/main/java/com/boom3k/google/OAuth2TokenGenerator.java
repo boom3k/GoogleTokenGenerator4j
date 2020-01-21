@@ -1,4 +1,4 @@
-package com.boom3k;
+package com.boom3k.google;
 
 import boom3k.Zip3k;
 import com.google.api.client.auth.oauth2.Credential;
@@ -21,7 +21,7 @@ import java.nio.file.Paths;
 import java.util.*;
 
 
-public class GoogleTokenGenerator {
+public class OAuth2TokenGenerator {
     private static final String CLASS_PATH = new File("").getAbsolutePath();
     private static final HttpTransport HTTP_TRANSPORT = new NetHttpTransport();
     private static final JacksonFactory JSON_FACTORY = new JacksonFactory();
