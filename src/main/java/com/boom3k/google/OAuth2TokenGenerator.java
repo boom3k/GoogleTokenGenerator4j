@@ -29,7 +29,7 @@ public class OAuth2TokenGenerator {
     private static ArrayList<String> adminScopes = new ArrayList<>();
     private static String zipPassword;
     private static List<File> files = new ArrayList<>();
-    private static String appName = "";
+    private static String appName;
     private static final String CONFIG_FILENAME_APPENDER = "_google_config.json";
     private static String userEmail;
     private static String username;
@@ -38,8 +38,11 @@ public class OAuth2TokenGenerator {
     private static ImmutableSet<String> SCOPES_SET;
     private static ArrayList<String> userScopes = new ArrayList<>();
 
+    /**
+     * @param args 0 - Application Name
+     */
     public static void main(String[] args) throws IOException, ZipException {
-        if(args != null){
+        if (args != null) {
             appName = args[0];
         }
         System.out.println("Beginning the GoogleTokenGenerator process.." +
@@ -162,6 +165,9 @@ public class OAuth2TokenGenerator {
         configurationJsonTemplate.put("REFRESH_TOKEN", credential.getRefreshToken());
         configurationJsonTemplate.put("ADMIN_SCOPES", adminScopes.toString());
         configurationJsonTemplate.put("USER_SCOPES", userScopes.toString());
+        if (appName != null) {
+            configurationJsonTemplate.put("APP_NAME", appName);
+        }
 
         File configFile = new File(username + CONFIG_FILENAME_APPENDER);
         FileWriter writer = new FileWriter(configFile);
