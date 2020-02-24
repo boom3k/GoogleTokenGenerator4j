@@ -1,4 +1,4 @@
-package com.boom3k.google;
+package com.github.boom3k;
 
 import boom3k.Zip3k;
 import com.google.api.client.auth.oauth2.Credential;
