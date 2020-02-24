@@ -1,7 +1,7 @@
 apply plugin: 'java-library'
 apply plugin: 'java'
 apply plugin: 'idea'
-group 'com.boom3k'
+group 'com.boom3k.google'
 version 'v2'
 def mainClass = group + ".GoogleTokenGenerator"
 
