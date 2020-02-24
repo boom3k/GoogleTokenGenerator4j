@@ -1,9 +1,9 @@
 apply plugin: 'java-library'
 apply plugin: 'java'
 apply plugin: 'idea'
-group 'com.boom3k.google'
+group 'com.github.boom3k.'
 version 'v2'
-def mainClass = group + ".GoogleTokenGenerator"
+def mainClass = group + "GoogleTokenGenerator"
 
 
 sourceCompatibility = 1.8
