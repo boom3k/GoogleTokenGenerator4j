@@ -2,11 +2,9 @@ apply plugin: 'java-library'
 apply plugin: 'java'
 apply plugin: 'idea'
 group 'com.github.boom3k.'
-version 'v2'
+version 'stable'
 def mainClass = group + "GoogleTokenGenerator"
 
-
-sourceCompatibility = 1.8
 
 repositories {
     jcenter()

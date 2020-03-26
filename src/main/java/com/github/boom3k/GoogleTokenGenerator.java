@@ -5,7 +5,9 @@ import com.google.api.client.auth.oauth2.Credential;
 import com.google.api.client.extensions.java6.auth.oauth2.AuthorizationCodeInstalledApp;
 import com.google.api.client.extensions.jetty.auth.oauth2.LocalServerReceiver;
 import com.google.api.client.googleapis.auth.oauth2.GoogleAuthorizationCodeFlow;
+import com.google.api.client.googleapis.auth.oauth2.GoogleAuthorizationCodeTokenRequest;
 import com.google.api.client.googleapis.auth.oauth2.GoogleClientSecrets;
+import com.google.api.client.googleapis.auth.oauth2.GoogleTokenResponse;
 import com.google.api.client.http.HttpTransport;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.jackson2.JacksonFactory;
@@ -26,21 +28,23 @@ import java.util.Scanner;
 
 
 public class GoogleTokenGenerator {
-    private static final String CLASS_PATH = new File("").getAbsolutePath();
-    private static final HttpTransport HTTP_TRANSPORT = new NetHttpTransport();
-    private static final JacksonFactory JSON_FACTORY = new JacksonFactory();
-    private static BufferedReader configurationInputReader = new BufferedReader(new InputStreamReader(System.in));
-    private static ArrayList<String> adminScopes = new ArrayList<>();
-    private static String zipPassword;
-    private static List<File> files = new ArrayList<>();
-    private static String appName;
-    private static final String CONFIG_FILENAME_APPENDER = "_google_config.json";
-    private static String userEmail;
-    private static String username;
-    private static String domain;
-    private static GoogleClientSecrets googleClientSecrets = new GoogleClientSecrets();
-    private static ImmutableSet<String> SCOPES_SET;
-    private static ArrayList<String> userScopes = new ArrayList<>();
+    static  final String CLASS_PATH = new File("").getAbsolutePath();
+    static  final HttpTransport HTTP_TRANSPORT = new NetHttpTransport();
+    static  final JacksonFactory JSON_FACTORY = new JacksonFactory();
+    static  BufferedReader configurationInputReader = new BufferedReader(new InputStreamReader(System.in));
+    static  ArrayList<String> adminScopes = new ArrayList<>();
+    static  String zipPassword;
+    static  List<File> files = new ArrayList<>();
+    static  String appName;
+    static  final String CONFIG_FILENAME_APPENDER = "_google_config.json";
+    static  String userEmail;
+    static  String username;
+    static  String domain;
+    static  GoogleClientSecrets googleClientSecrets = new GoogleClientSecrets();
+    static  ImmutableSet<String> SCOPES_SET;
+    static  ArrayList<String> userScopes = new ArrayList<>();
+    static Credential credential;
+
 
     /**
      * @param args 0 - Application Name
@@ -83,7 +87,7 @@ public class GoogleTokenGenerator {
         }
 
         /**-------------- Get ClientSecrets File --------------*/
-        System.out.println("Will this application require a OAuth2 Token? (y/n): ");
+        System.out.print("Will this application require a OAuth2 Token? (y/n): ");
         if (configurationInputReader.readLine().toLowerCase().contains("y")) {
             /**--------------Get Scopes from file--------------*/
             System.out.println("Please use the Java window to select the text file with the required scopes");
@@ -145,14 +149,25 @@ public class GoogleTokenGenerator {
             System.out.println("Project Id: " + googleClientSecrets.getInstalled().get("project_id"));
 
             /**--------------Authentication with Google AuthFlow and return token--------------*/
-            System.out.print("Authentication flow will open a new browser window/tab. Press enter when ready...");
-            configurationInputReader.readLine();
+
             System.out.println("Google Authentication Flow started....");
             GoogleAuthorizationCodeFlow flow = new GoogleAuthorizationCodeFlow
                     .Builder(HTTP_TRANSPORT, JSON_FACTORY, googleClientSecrets, SCOPES_SET.asList())
                     .setAccessType("offline")
                     .build();
-            Credential credential = new AuthorizationCodeInstalledApp(flow, new LocalServerReceiver()).authorize(userEmail);
+
+            System.out.print("Copy and paste the authorization code manually? (y/n):");
+            if (configurationInputReader.readLine().toLowerCase().contains("y")) {
+                String authorizeUrl = flow.newAuthorizationUrl().setRedirectUri("urn:ietf:wg:oauth:2.0:oob").build();
+                System.out.println("Paste this url in your browser:\n\n" + authorizeUrl + "\n\n");
+                System.out.println("Type the Code you recieved here:");
+                GoogleAuthorizationCodeTokenRequest tokenRequest = flow.newTokenRequest(configurationInputReader.readLine());
+                tokenRequest.setRedirectUri("urn:ietf:wg:oauth:2.0:oob");
+                GoogleTokenResponse tokenResponse = tokenRequest.execute();
+                credential = flow.createAndStoreCredential(tokenResponse, userEmail);
+            } else {
+                credential = new AuthorizationCodeInstalledApp(flow, new LocalServerReceiver()).authorize(userEmail);
+            }
             System.out.println("Google Authentication Flow ended....");
 
             /** -------------------Update Json File ------------------------------*/
@@ -170,11 +185,12 @@ public class GoogleTokenGenerator {
             writer.write(new GsonBuilder().setPrettyPrinting().create().toJson(clientSecretsJsonData));
             writer.close();
             Zip3k.zipFile(username + "_" + appName + "_credentials", files, zipPassword);
+            System.out.println("Created file: " + username + "_" + appName + "_credentials.zip");
             System.out.println("************  Google Token Generator End ************");
         }
     }
 
-    public static File getFileFromJFC(String startPath, String title, String buttonTitle, String fileDescription, String fileExtensions) {
+    static File getFileFromJFC(String startPath, String title, String buttonTitle, String fileDescription, String fileExtensions) {
 
         JFileChooser jfc = new JFileChooser(startPath);
         FileNameExtensionFilter filter = new FileNameExtensionFilter(fileDescription, fileExtensions.toLowerCase());
