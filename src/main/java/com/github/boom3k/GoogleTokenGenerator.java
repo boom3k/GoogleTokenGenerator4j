@@ -20,6 +20,8 @@ import net.lingala.zip4j.exception.ZipException;
 import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.util.ArrayList;
@@ -28,40 +30,59 @@ import java.util.Scanner;
 
 
 public class GoogleTokenGenerator {
-    static  final String CLASS_PATH = new File("").getAbsolutePath();
-    static  final HttpTransport HTTP_TRANSPORT = new NetHttpTransport();
-    static  final JacksonFactory JSON_FACTORY = new JacksonFactory();
-    static  BufferedReader configurationInputReader = new BufferedReader(new InputStreamReader(System.in));
-    static  ArrayList<String> adminScopes = new ArrayList<>();
-    static  String zipPassword;
-    static  List<File> files = new ArrayList<>();
-    static  String appName;
-    static  final String CONFIG_FILENAME_APPENDER = "_google_config.json";
-    static  String userEmail;
-    static  String username;
-    static  String domain;
-    static  GoogleClientSecrets googleClientSecrets = new GoogleClientSecrets();
-    static  ImmutableSet<String> SCOPES_SET;
-    static  ArrayList<String> userScopes = new ArrayList<>();
+    static final String CLASS_PATH = new File("").getAbsolutePath();
+    static final HttpTransport HTTP_TRANSPORT = new NetHttpTransport();
+    static final JacksonFactory JSON_FACTORY = new JacksonFactory();
+    static BufferedReader configurationInputReader = new BufferedReader(new InputStreamReader(System.in));
+    static ArrayList<String> adminScopes = new ArrayList<>();
+    static ArrayList<String> allScopes = new ArrayList<>();
+    static String zipPassword;
+    static List<File> files = new ArrayList<>();
+    static String appName;
+    static final String CONFIG_FILENAME_APPENDER = "_google_config.json";
+    static String userEmail;
+    static String username;
+    static String domain;
+    static GoogleClientSecrets googleClientSecrets = new GoogleClientSecrets();
+    static ImmutableSet<String> SCOPES_SET;
+    static ArrayList<String> userScopes = new ArrayList<>();
     static Credential credential;
+    static File clientSecretsFile;
+    static String fileName;
+    static boolean hasGUI;
 
 
     /**
      * @param args 0 - Application Name
      */
     public static void main(String[] args) throws IOException, ZipException {
+        //-appname prod
+        //-oauth C:\OneDrive\devstuff\credentials\prod.da\prod-Gam\client_secret.json
+        //-scopes C:\OneDrive\devstuff\credentials\prod.da\prod-Gam\scopes.txt
+        //-serviceaccountC:\OneDrive\devstuff\credentials\prod.da\prod-Gam\serviceAccountKey.json
+        System.out.println(args.length);
         appName = args[0];
         System.out.println("Beginning the GoogleTokenGenerator process.." +
                 "\nPlease have your scopes text file and credentials ready.\nA new zip file will be placed in {" + CLASS_PATH + "} " +
-                "with Google token and credentials once the program authorizes with the client." +
-                "\nPress Enter to begin...");
-        configurationInputReader.readLine();
+                "with Google token and credentials once the program authorizes with the client.");
         System.out.print("Enter your account email: ");
         userEmail = configurationInputReader.readLine();
         domain = userEmail.substring(userEmail.lastIndexOf("@") + 1);
         username = userEmail.substring(0, userEmail.lastIndexOf("@"));
-
+        fileName = username + "_" + appName + "_credentials";
         /**--------------Set zipPassword--------------*/
+        setPassword();
+
+        /**-------------- Get ServiceAccountKey File --------------*/
+        getServiceAccountCredential();
+
+        /**-------------- Get ClientSecrets File --------------*/
+        getClientSecrets();
+        getOAuth2Tokens();
+
+    }
+
+    static void setPassword() {
         int passwordAttempt = 0;
         String validatedZipPassword;
         do {
@@ -73,8 +94,9 @@ public class GoogleTokenGenerator {
             validatedZipPassword = new String(System.console().readPassword("Please enter the password again:"));
             passwordAttempt++;
         } while (!zipPassword.contentEquals(validatedZipPassword));
+    }
 
-        /**-------------- Get ServiceAccountKey File --------------*/
+    static void getServiceAccountCredential() throws IOException {
         System.out.print("Will this application require a serviceAccount? (y/n): ");
         if (configurationInputReader.readLine().toLowerCase().contains("y")) {
             System.out.println("Please use the Java window to select the Service AccountKey file");
@@ -85,8 +107,9 @@ public class GoogleTokenGenerator {
                     "json");
             files.add(serviceAccountKeyFile);
         }
+    }
 
-        /**-------------- Get ClientSecrets File --------------*/
+    static void getClientSecrets() throws IOException {
         System.out.print("Will this application require a OAuth2 Token? (y/n): ");
         if (configurationInputReader.readLine().toLowerCase().contains("y")) {
             /**--------------Get Scopes from file--------------*/
@@ -96,7 +119,7 @@ public class GoogleTokenGenerator {
                     "Select",
                     "Scopes text file",
                     "txt");
-
+            files.add(scopesFile);
             Scanner scopesScanner = new Scanner(new FileReader(scopesFile));
             while (scopesScanner.hasNextLine()) {
                 String currentLine = scopesScanner.nextLine();
@@ -109,7 +132,6 @@ public class GoogleTokenGenerator {
                 }
             }
             scopesScanner.close();
-            ArrayList<String> allScopes = new ArrayList<>();
             allScopes.addAll(userScopes);
             System.out.print("Will this application require use of the Google Admin SDK? (y/n): ");
             if (configurationInputReader.readLine().toLowerCase().contains("y")) {
@@ -129,15 +151,14 @@ public class GoogleTokenGenerator {
                 adminScopes.add("https://www.googleapis.com/auth/cloud-platform");
                 adminScopes.add("https://www.googleapis.com/auth/cloud_search");
                 adminScopes.add("https://www.googleapis.com/auth/apps.licensing");
-                adminScopes.add("https://www.googleapis.com/auth/ediscovery");
+                adminScopes.add("https://www.googleapis.com/auth/admin.directory.device.mobile");
                 allScopes.addAll(adminScopes);
             }
-
             System.out.println("Project Scopes: ");
             SCOPES_SET = ImmutableSet.copyOf(allScopes);
             SCOPES_SET.forEach(scope -> System.out.println(scope));
             System.out.println("Please use the Java window to select the Google Client Secrets file");
-            File clientSecretsFile = getFileFromJFC(scopesFile.getAbsolutePath(),
+            clientSecretsFile = getFileFromJFC(scopesFile.getAbsolutePath(),
                     "Please select the Google Client Secret File",
                     "Select",
                     "Google ClientSecret File",
@@ -147,47 +168,52 @@ public class GoogleTokenGenerator {
             System.out.println("Reading ClientSecrets file...");
             System.out.println("Project ClientId: " + googleClientSecrets.getInstalled().getClientId());
             System.out.println("Project Id: " + googleClientSecrets.getInstalled().get("project_id"));
-
-            /**--------------Authentication with Google AuthFlow and return token--------------*/
-
-            System.out.println("Google Authentication Flow started....");
-            GoogleAuthorizationCodeFlow flow = new GoogleAuthorizationCodeFlow
-                    .Builder(HTTP_TRANSPORT, JSON_FACTORY, googleClientSecrets, SCOPES_SET.asList())
-                    .setAccessType("offline")
-                    .build();
-
-            System.out.print("Copy and paste the authorization code manually? (y/n):");
-            if (configurationInputReader.readLine().toLowerCase().contains("y")) {
-                String authorizeUrl = flow.newAuthorizationUrl().setRedirectUri("urn:ietf:wg:oauth:2.0:oob").build();
-                System.out.println("Paste this url in your browser:\n\n" + authorizeUrl + "\n\n");
-                System.out.println("Type the Code you recieved here:");
-                GoogleAuthorizationCodeTokenRequest tokenRequest = flow.newTokenRequest(configurationInputReader.readLine());
-                tokenRequest.setRedirectUri("urn:ietf:wg:oauth:2.0:oob");
-                GoogleTokenResponse tokenResponse = tokenRequest.execute();
-                credential = flow.createAndStoreCredential(tokenResponse, userEmail);
-            } else {
-                credential = new AuthorizationCodeInstalledApp(flow, new LocalServerReceiver()).authorize(userEmail);
-            }
-            System.out.println("Google Authentication Flow ended....");
-
-            /** -------------------Update Json File ------------------------------*/
-            JsonObject clientSecretsJsonData = new Gson().fromJson(new FileReader(clientSecretsFile), JsonObject.class);
-            JsonObject tokenData = new JsonObject();
-            tokenData.addProperty("created",
-                    Instant.ofEpochMilli(credential.getClock()
-                            .currentTimeMillis())
-                            .atZone(ZoneId.systemDefault())
-                            .toLocalDate().toString());
-            tokenData.addProperty("access_token", credential.getAccessToken());
-            tokenData.addProperty("refresh_token", credential.getRefreshToken());
-            clientSecretsJsonData.add("tokens", tokenData);
-            FileWriter writer = new FileWriter(clientSecretsFile);
-            writer.write(new GsonBuilder().setPrettyPrinting().create().toJson(clientSecretsJsonData));
-            writer.close();
-            Zip3k.zipFile(username + "_" + appName + "_credentials", files, zipPassword);
-            System.out.println("Created file: " + username + "_" + appName + "_credentials.zip");
-            System.out.println("************  Google Token Generator End ************");
         }
+    }
+
+    static void getOAuth2Tokens() throws IOException, ZipException {
+        /**--------------Authentication with Google AuthFlow and return token--------------*/
+        System.out.println("Google Authentication Flow started....");
+        GoogleAuthorizationCodeFlow flow = new GoogleAuthorizationCodeFlow
+                .Builder(HTTP_TRANSPORT, JSON_FACTORY, googleClientSecrets, SCOPES_SET.asList())
+                .setAccessType("offline")
+                .build();
+
+        System.out.print("Copy and paste the authorization code manually? (y/n):");
+        if (configurationInputReader.readLine().toLowerCase().contains("y")) {
+            String authorizeUrl = flow.newAuthorizationUrl().setRedirectUri("urn:ietf:wg:oauth:2.0:oob").build();
+            System.out.println("Paste this url in your browser:\n\n" + authorizeUrl + "\n\n");
+            System.out.println("Type the Code you recieved here:");
+            GoogleAuthorizationCodeTokenRequest tokenRequest = flow.newTokenRequest(configurationInputReader.readLine());
+            tokenRequest.setRedirectUri("urn:ietf:wg:oauth:2.0:oob");
+            GoogleTokenResponse tokenResponse = tokenRequest.execute();
+            credential = flow.createAndStoreCredential(tokenResponse, userEmail);
+        } else {
+            credential = new AuthorizationCodeInstalledApp(flow, new LocalServerReceiver()).authorize(userEmail);
+        }
+        System.out.println("Google Authentication Flow ended....");
+
+        /** -------------------Update Json File ------------------------------*/
+        JsonObject clientSecretsJsonData = new Gson().fromJson(new FileReader(clientSecretsFile), JsonObject.class);
+        JsonObject tokenData = new JsonObject();
+        tokenData.addProperty("created",
+                Instant.ofEpochMilli(credential.getClock()
+                        .currentTimeMillis())
+                        .atZone(ZoneId.systemDefault())
+                        .toLocalDate().toString());
+        tokenData.addProperty("authorizedUser", userEmail);
+        tokenData.addProperty("access_token", credential.getAccessToken());
+        tokenData.addProperty("refresh_token", credential.getRefreshToken());
+        tokenData.addProperty("admin_scopes", String.valueOf(adminScopes).replaceAll("\"",""));
+        tokenData.addProperty("user_scopes", String.valueOf(userScopes).replaceAll("\"",""));
+        clientSecretsJsonData.add("tokens", tokenData);
+        FileWriter writer = new FileWriter(clientSecretsFile);
+        writer.write(new GsonBuilder().setPrettyPrinting().create().toJson(clientSecretsJsonData));
+        writer.close();
+        Files.deleteIfExists(Paths.get(fileName + ".zip"));
+        Zip3k.zipFile(fileName, files, zipPassword);
+        System.out.println(fileName + ".zip");
+        System.out.println("************  Google Token Generator End ************");
     }
 
     static File getFileFromJFC(String startPath, String title, String buttonTitle, String fileDescription, String fileExtensions) {
